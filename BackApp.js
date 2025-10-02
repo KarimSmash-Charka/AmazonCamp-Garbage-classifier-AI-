@@ -1,15 +1,12 @@
 // App.js — Expo версия "garbage classifier"
 // Камера/галерея → превью → "Classify the item/items" → лоадер → показ картинки-ответа или Retry.
 // Байты готовятся как Uint8Array. Есть 2 закомментированных варианта интеграции с FastAPI.
-const API_URL = 'http://10.9.105.98:8000/classify-image';
-
 
 import React, { useCallback, useMemo, useState } from 'react';
 import { ActivityIndicator, Alert, Image, Pressable, SafeAreaView, StyleSheet, Text, View } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
-import * as FileSystem from 'expo-file-system/legacy';
+import * as FileSystem from 'expo-file-system';
 import * as Base64 from 'base64-js'; // для надёжной конвертации bytes<->base64
-
 
 // Изумрудная минималистичная тема
 const COLORS = {
@@ -101,61 +98,55 @@ export default function App() {
     setPhase(PHASES.CAPTURE);
     setImage(null);
     setResultUri(null);
-    setDetections(null);   // <-- добавляем очистку
     setError(null);
   }, []);
 
 
-
-  // IP/порт твоего сервера
-
-
-const classify = useCallback(async () => {
+  const classify = useCallback(async () => {
   if (!image?.uri) return;
-  setPhase(PHASES.PROCESSING);
-  setError(null);
-  setResultUri(null);
-  setDetections(null);
+    setPhase(PHASES.PROCESSING);
+    setError(null);
+    setResultUri(null);
+    setDetections(null);
 
-  try {
-    const form = new FormData();
-    form.append('file', { uri: image.uri, name: 'photo.jpg', type: 'image/jpeg' });
+    try {
+      // multipart/form-data → UploadFile = File(...) на FastAPI
+      const form = new FormData();
+      form.append('file', {
+        uri: image.uri,
+        name: 'photo.jpg',
+        type: 'image/jpeg',
+      });
+      // return_image=true по умолчанию в нашем обработчике
 
-    const resp = await fetch(API_URL, {
-      method: 'POST',
-      body: form,
-      headers: { Accept: 'image/jpeg' },
-    });
-    if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+      const resp = await fetch(API_URL, {
+        method: 'POST',
+        body: form,
+        headers: { 'Accept': 'application/json' }, // ВАЖНО: не ставь Content-Type вручную
+      });
+      if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+      const json = await resp.json();
 
-    // 1) детекции из заголовка
-    const detHeader = resp.headers.get('x-detections');
-    if (detHeader) {
-      try { setDetections(JSON.parse(detHeader)); } catch { setDetections([]); }
+      // json.annotated_image_b64 -> сохраняем в файл для <Image/>
+      if (json.annotated_image_b64) {
+        const outPath = FileSystem.cacheDirectory + `gc-result-${Date.now()}.jpg`;
+        await FileSystem.writeAsStringAsync(outPath, json.annotated_image_b64, {
+          encoding: FileSystem.EncodingType.Base64,
+        });
+        setResultUri(outPath);
+      } else {
+        // если картинка не пришла — показываем исходник, но это нетипично
+        setResultUri(image.uri);
+      }
+
+      // детекции (массив объектов {bbox, yolo_conf, class, class_conf})
+      setDetections(json.detections || []);
+      setPhase(PHASES.RESULT);
+    } catch (e) {
+      setError(e?.message || 'Classification failed');
+      setPhase(PHASES.RESULT);
     }
-
-    // 2) бинарный JPEG -> base64 -> файл
-    const arrBuf = await resp.arrayBuffer();
-    const bytes = new Uint8Array(arrBuf);
-    const b64 = Base64.fromByteArray(bytes);           // импорт: import * as Base64 from 'base64-js';
-
-    const outPath = FileSystem.cacheDirectory + `gc-result-${Date.now()}.jpg`;
-    // ВАЖНО: у некоторых версий Expo/FS EncodingType может быть undefined.
-    await FileSystem.writeAsStringAsync(outPath, b64, {
-      encoding: (FileSystem?.EncodingType?.Base64) ?? 'base64',  // <- фикс
-    });
-
-    setResultUri(outPath);
-    setPhase(PHASES.RESULT);
-  } catch (e) {
-    console.log('fetch error', e);
-    setError(e?.message || 'Classification failed');
-    setPhase(PHASES.RESULT);
-  }
-}, [image]);
-
-
-
+  }, [image]);
 
   // Основная логика "Classify"
   // const classify = useCallback(async () => {
@@ -219,7 +210,6 @@ const classify = useCallback(async () => {
       resetAll();
     }
   }, [image, resetAll]);
-  
 
   // UI
   return (
@@ -274,20 +264,6 @@ const classify = useCallback(async () => {
               <>
                 <Muted>Server response image:</Muted>
                 {!!resultUri && <Image style={styles.preview} source={{ uri: resultUri }} resizeMode="contain" />}
-
-                {/* === ДОБАВЬ ВОТ СЮДА === */}
-                {!error && detections && detections.length > 0 && (
-                  <>
-                    <Muted>Detections:</Muted>
-                    {detections.map((d, i) => (
-                      <Text key={i} style={{ color: COLORS.fg, fontSize: 13 }}>
-                        #{i + 1} [{d.bbox.join(', ')}] — {d.class} ({(d.class_conf * 100).toFixed(1)}%)
-                      </Text>
-                    ))}
-                  </>
-                )}
-                {/* ======================== */}
-
                 <Row>
                   <Btn label="Classify another" onPress={resetAll} />
                 </Row>
@@ -295,7 +271,6 @@ const classify = useCallback(async () => {
             )}
           </Card>
         )}
-
       </View>
     </SafeAreaView>
   );

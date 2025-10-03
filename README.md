@@ -174,4 +174,191 @@ This model is used in **object detection mode** to identify multiple types of ga
 - **Model trained by**: Daulet  
 - **Documentation prepared by**: Asylkhan
 
+---
+---
+---
+
+# Documentation for ⁠ App.js ⁠ and running the app (Expo + real server)
+>
+	⁠In short: the React Native (Expo) client takes/makes a photo, shows a preview, *sends it to a real backend* and displays the *actual result*. In this version, the API address is set as a **constant in ⁠ App.js ⁠*:
+
+ ```js
+ const API_URL = 'http://<PC_IPV4>:8000/classify-image';
+  ```
+>
+	⁠Replace ⁠ <PC_IPV4> ⁠ with the local IPv4 address of your computer, which must be on the same Wi-Fi network as your phone.
+
+---
+
+## 1) Structure of ⁠ App.js ⁠
+
+*Purpose: the root component. Initializes camera/gallery permissions, renders the UI, prepares bytes (if needed), **sends the image to ⁠ API_URL ⁠* and displays the response.*
+
+### 1.1 Imports (typical)
+
+•⁠  ⁠⁠ react ⁠, ⁠ useState ⁠, ⁠ useEffect ⁠, ⁠ useMemo ⁠, ⁠ useCallback ⁠  
+•⁠  ⁠⁠ expo-image-picker ⁠ (gallery/camera)  
+•⁠  ⁠⁠ react-native ⁠ — ⁠ View ⁠, ⁠ Text ⁠, ⁠ Image ⁠, ⁠ Pressable ⁠, ⁠ SafeAreaView ⁠, ⁠ StyleSheet ⁠, ⁠ ActivityIndicator ⁠, ⁠ Alert ⁠  
+•⁠  ⁠⁠ expo-file-system/legacy ⁠ — read file from filesystem  
+•⁠  ⁠⁠ base64-js ⁠ — reliable conversion bytes ↔️ base64  
+
+### 1.2 State
+
+•⁠  ⁠⁠ imageUri ⁠ — path to the selected/captured file  
+•⁠  ⁠⁠ phase ⁠ — screen stage: ⁠ CAPTURE ⁠ → ⁠ PREVIEW ⁠ → ⁠ PROCESSING ⁠ → ⁠ RESULT ⁠  
+•⁠  ⁠⁠ loading ⁠ — request indicator  
+•⁠  ⁠⁠ result ⁠ — response data (image/JSON depending on endpoint)  
+
+### 1.3 Key functions
+
+•⁠  ⁠⁠ pickImage() ⁠ / ⁠ takePhoto() ⁠ — select/capture and move to preview  
+•⁠  ⁠⁠ readBytes(uri) ⁠ — read file and prepare *⁠ Uint8Array ⁠* or *base64* (both options exist in the project)  
+•⁠  ⁠⁠ sendToServer() ⁠ — send to *⁠ API_URL ⁠. In this build, the path *⁠ /classify-image ⁠* is used, which returns an **image* (binary/octet-stream or image/*). Alternative endpoint — ⁠ /classify ⁠ with JSON (if enabled on the server)  
+•⁠  ⁠⁠ reset() ⁠ — clear state for a new capture  
+
+### 1.4 UI
+
+•⁠  ⁠Buttons: “Pick from Gallery”, “Take Photo”, “Send”, “Retry”  
+•⁠  ⁠Preview screen with mini-cards/color theme  
+•⁠  ⁠Processing screen with loader  
+•⁠  ⁠Result screen: response image *or* JSON fields — depending on the chosen endpoint  
+
+---
+
+## 2) API address configuration
+
+At the top of ⁠ App.js ⁠ find the line:
+```⁠js
+const API_URL = "http://10.9.105.98:8000/classify-image";
+ ```
+
+and replace the IP *with your PC’s address* in the local network (example: ⁠ 192.168.0.12 ⁠). Make sure your phone and PC are connected to the *same* Wi-Fi network.
+
+	⁠How to check IPv4 on Windows: ⁠ Win + R ⁠ → ⁠ cmd ⁠ → ⁠ ipconfig ⁠ → line ⁠ IPv4 Address ⁠. Take the address of your active network (usually 192.168.x.x).
+
+If you need environment switching without editing code, you can replace the constant with reading from ⁠ .env ⁠ (⁠ EXPO_PUBLIC_API_URL ⁠) — but the current version uses a *hard-coded* ⁠ API_URL ⁠.
+
+---
+
+## 3) Sending to the server: two scenarios
+
+### 3.1 Server returns an *image* (⁠ /classify-image ⁠)
+
+```js
+async function sendToServer() {
+  try {
+    setLoading(true);
+
+    // prepare form-data with file
+    const form = new FormData();
+    form.append('file', { uri: imageUri, name: 'image.jpg', type: 'image/jpeg' });
+
+    const res = await fetch(API_URL, { method: 'POST', body: form });
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+
+    // read binary response and show as image
+    const blob = await res.blob();
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      // data URL: can be passed into <Image source={{ uri: reader.result }} />
+      setResult({ previewUri: reader.result, type: 'image' });
+    };
+    reader.readAsDataURL(blob);
+  } catch (e) {
+    Alert.alert('Error', e?.message || 'Failed to send image');
+  } finally {
+    setLoading(false);
+  }
+}
+```
+
+	⁠In Expo (native) instead of ⁠ FileReader ⁠ you can use ⁠ expo-file-system ⁠ / ⁠ ImageManipulator ⁠, or save blob to a file and provide ⁠ uri ⁠ to the ⁠ <Image/> ⁠ component.
+
+### 3.2 Server returns *JSON* (⁠ /classify ⁠)
+
+```js
+const API_JSON = 'http://<PC_IPV4>:8000/classify';
+
+async function sendToServerJson() {
+  setLoading(true);
+  try {
+    const form = new FormData();
+    form.append('file', { uri: imageUri, name: 'image.jpg', type: 'image/jpeg' });
+
+    const res = await fetch(API_JSON, { method: 'POST', body: form, headers: { Accept: 'application/json' } });
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+
+    const json = await res.json();
+    setResult({ ...json, type: 'json' }); // expected: { label, score, ... }
+  } catch (e) {
+    Alert.alert('Error', e?.message || 'Request failed');
+  } finally {
+    setLoading(false);
+  }
+}
+```
+
+---
+
+## 4) Quick start (Frontend, Expo)
+
+⁠ bash
+# install dependencies
+npm install
+# or
+yarn install
+
+# start Metro
+npx expo start
+ ⁠
+
+Then open *Expo Go* on your phone → scan the QR code. If LAN does not work, switch to *Tunnel* in the Expo web panel.
+
+*Common issues*: cache (⁠ npx expo start -c ⁠), camera/gallery permissions, VPN/firewall, router client isolation (AP isolation), connect to the same WiFi with computer.
+
+---
+
+## 5) Server (for reference)
+
+Your real server is already running. If you need a local FastAPI mock — draft below:
+
+```python
+from fastapi import FastAPI, UploadFile, File
+from fastapi.responses import JSONResponse, StreamingResponse
+from io import BytesIO
+
+app = FastAPI()
+
+@app.post('/classify')
+async def classify(file: UploadFile = File(...)):
+    data = await file.read()
+    return JSONResponse({'label': 'demo', 'score': 1.0, 'bytes': len(data)})
+
+@app.post('/classify-image')
+async def classify_image(file: UploadFile = File(...)):
+    data = await file.read()
+    return StreamingResponse(BytesIO(data), media_type=file.content_type)
+```
+
+Run with: ⁠ uvicorn main:app --reload --host 0.0.0.0 --port 8000 ⁠.
+
+---
+
+## 6) Report checklist
+
+•⁠  ⁠[ ] QR code ⁠ npx expo start ⁠ in terminal/browser  
+•⁠  ⁠[ ] Source selection screen in Expo Go  
+•⁠  ⁠[ ] File preview screen  
+•⁠  ⁠[ ] Result screen:
+
+  * image response for ⁠ /classify-image ⁠, *or*  
+  * JSON fields (label/score/...) for ⁠ /classify ⁠  
+•⁠  ⁠[ ] (Optional) screenshot of request to ⁠ http://<PC_IPV4>:8000/classify-image ⁠ or ⁠ /classify ⁠  
+
+---
+
+## 7) Short defense
+
+*EN (ref): The Expo client handles image selection/capture, sends the file to a **live endpoint* ⁠ API_URL ⁠ (⁠ /classify-image ⁠ by default) and renders either an image or JSON response. The API address is hard-coded in ⁠ App.js ⁠ for fast LAN testing.*
+
 

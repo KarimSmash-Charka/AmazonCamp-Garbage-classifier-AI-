@@ -21,10 +21,11 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { useFonts, Poppins_400Regular, Poppins_600SemiBold, Poppins_700Bold } from '@expo-google-fonts/poppins';
 import { MaterialCommunityIcons, Feather } from '@expo/vector-icons';
 
+
 const COLORS = {
   bg1: '#0f2e26', 
   bg2: '#0c3b2e',
-  bg3: '#115e59',
+  bg3: '#115e59', 
   mint: '#34d399',
   lime: '#a3e635',
   cream: '#ecfdf5',
@@ -43,6 +44,7 @@ const PHASES = {
 };
 
 export default function App() {
+
   const [fontsLoaded] = useFonts({
     Poppins_400Regular,
     Poppins_600SemiBold,
@@ -57,6 +59,7 @@ export default function App() {
 
   const canClassify = useMemo(() => !!image && phase === PHASES.PREVIEW, [image, phase]);
 
+
   const ensurePermissions = useCallback(async () => {
     const lib = await ImagePicker.requestMediaLibraryPermissionsAsync();
     const cam = await ImagePicker.requestCameraPermissionsAsync();
@@ -65,6 +68,7 @@ export default function App() {
     return ok;
   }, []);
 
+  
   const openCamera = useCallback(async () => {
     try {
       if (!(await ensurePermissions())) return;
@@ -82,6 +86,7 @@ export default function App() {
       setError(e?.message || 'Camera error');
     }
   }, [ensurePermissions]);
+
 
   const openGallery = useCallback(async () => {
     try {
@@ -102,7 +107,7 @@ export default function App() {
     }
   }, [ensurePermissions]);
 
-  
+
   const base64ToBytes = (b64) => Base64.toByteArray(b64);
   const bytesToBase64 = (bytes) => Base64.fromByteArray(bytes);
 
@@ -137,7 +142,7 @@ export default function App() {
         body: form,
         headers: { Accept: 'image/jpeg' },
       });
-      if (!resp.ok) throw new Error(⁠ HTTP ${resp.status} ⁠);
+      if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
 
       const detHeader = resp.headers.get('x-detections');
       if (detHeader) {
@@ -148,7 +153,7 @@ export default function App() {
       const bytes = new Uint8Array(arrBuf);
       const b64 = Base64.fromByteArray(bytes);
 
-      const outPath = FileSystem.cacheDirectory + ⁠ gc-result-${Date.now()}.jpg ⁠;
+      const outPath = FileSystem.cacheDirectory + `gc-result-${Date.now()}.jpg`;
       await FileSystem.writeAsStringAsync(outPath, b64, {
         encoding: (FileSystem?.EncodingType?.Base64) ?? 'base64',
       });
@@ -285,7 +290,7 @@ export default function App() {
                       </View>
                     )}
 
-                   
+
                     {!error && detections && detections.length > 0 && (
                       <View style={styles.detsBlock}>
                         <Muted style={{ marginBottom: 6 }}>Detections:</Muted>
@@ -309,7 +314,7 @@ export default function App() {
             )}
           </Card>
 
-          
+
           <EcoFooter />
         </View>
       </SafeAreaView>
@@ -401,7 +406,7 @@ const styles = StyleSheet.create({
     flex: 1,
     paddingHorizontal: 16,
     paddingBottom: 12,
-    justifyContent: 'center', 
+    justifyContent: 'center',
   },
 
   card: {

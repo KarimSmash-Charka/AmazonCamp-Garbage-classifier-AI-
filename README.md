@@ -19,7 +19,7 @@
 ## 📥 Download
 1. All the requirements and libraries for the project are in the **requirements.txt** (no react_native libraries)
 2. Model weights for EfficientNet and Yolo are available here: [Google Drive Link](https://drive.google.com/drive/folders/1zjOuYtXwM5OrVcitNX3mJ4vauTer9j85?usp=share_link)
-
+3. Demo Video of Mobile App [Google Drive Link](https://drive.google.com/file/d/1s14zmmTMxAKD6HVjtnieNHRnDSzfx_MK/view?usp=share_link)
 
 ## 🙌 Team Contributions
 - EfficientNet model: Karim

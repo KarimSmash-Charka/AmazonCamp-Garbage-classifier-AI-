@@ -150,7 +150,7 @@ This document describes the training and usage of a YOLOv8n object detection mod
 ---
 
 ## 📊 Results
-- **Approximate Accuracy**: ~70%  
+- **Approximate Accuracy**: ~75%  
   *(Bounding box detection)*  
   ⚠️ *This is an estimated value provided by the author — validation is still pending.*
 

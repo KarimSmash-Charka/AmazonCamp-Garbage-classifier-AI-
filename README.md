@@ -200,6 +200,9 @@ The `run_inference` method is called at the API layer in order to obtain the res
 ## 4. Asset Collector
 The asset collector object will be instantiated at the processing layer level in order to ensure the server has the necessary files for running inference (e.g. model files, post processing files) and to restrict the access to those files outside the scope of the server. By making use of custom exceptions and proper handling, the server will not start if model files are not present where they are supposed to be. The asset collector object encapsulates the paths to the models, making the accesible only at the processing layer level, therefore keeping sensitive information away from the clients.
 
+## 👤 Author
+
+- **Server made by**: Stefan
 - **Documentation prepared by**: Stefan
 
 ---
@@ -388,5 +391,9 @@ Run with: ⁠ uvicorn main:app --reload --host 0.0.0.0 --port 8000 ⁠.
 ## 7) Short defense
 
 *EN (ref): The Expo client handles image selection/capture, sends the file to a **live endpoint* ⁠ API_URL ⁠ (⁠ /classify-image ⁠ by default) and renders either an image or JSON response. The API address is hard-coded in ⁠ App.js ⁠ for fast LAN testing.*
+- **
+## 👤 Author
 
+- **Mobile app made by**: Asylkhan
+- **Documentation prepared by**: Asylkhan
 

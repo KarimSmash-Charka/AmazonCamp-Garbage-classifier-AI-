@@ -178,6 +178,31 @@ This model is used in **object detection mode** to identify multiple types of ga
 ---
 ---
 
+# Garbage Detection AI Server Documentation
+
+ ## 1. Overview
+ This document describes the functionality of the main component which serves the purpose of accepting client requests, processing them and returning the desired result in an efficient manner.  The server is composed of **3 parts**:
+ 
+
+ - **API Layer,** which ensures connectivity between the clients and the processing layer
+ - **Processing Layer,** which parses client requests and runs inference on the data received, sending back inference results
+ - **Asset Collector,** which makes sure that model files are present and accesible for the processing layer
+
+## 2. API Layer
+By making use of the **FastAPI** framework, the API layer exposes an endpoint where the client would send the image data and receive the result of the inference process (detection label, bounding boxes).  
+The API layer class instantiates the **classifier object** and passes the data received from the client for further processing by placing it in a queue and awaiting the results using asynchronous methods.
+
+## 3. Processing Layer
+This component is responsible for emptying the queue containing client data, running inference, and returning the results. A worker method constantly checks if the queue contains data, in which case it will pass the image data to the `run_inference` method where the detection models will be employed.  
+The `run_inference` method is called at the API layer in order to obtain the results from the classifier class, passing them back to the client in JSON format.
+
+## 4. Asset Collector
+The asset collector object will be instantiated at the processing layer level in order to ensure the server has the necessary files for running inference (e.g. model files, post processing files) and to restrict the access to those files outside the scope of the server. By making use of custom exceptions and proper handling, the server will not start if model files are not present where they are supposed to be. The asset collector object encapsulates the paths to the models, making the accesible only at the processing layer level, therefore keeping sensitive information away from the clients.
+
+---
+---
+---
+
 # Documentation for ⁠ App.js ⁠ and running the app (Expo + real server)
 >
 	⁠In short: the React Native (Expo) client takes/makes a photo, shows a preview, *sends it to a real backend* and displays the *actual result*. In this version, the API address is set as a **constant in ⁠ App.js ⁠*:

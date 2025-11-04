@@ -1,7 +1,11 @@
-#Amazon Bootcamp - Design Document
+# Amazon Bootcamp - Design Document
+
 -Project: Garbage Classifier AI
--Repository:https://github.com/KarimSmash-Charka/AmazonCamp-Garbage-classifier-AI-
+
+-Repository:https://github.com/KarimSmash-Charka/AmazonCamp-Garbage-classifier-AI- 
+
 -Author(s):[Daulet,Karim,Asylkhan,Stefan]
+
 -Date:2025.11.04
 
 

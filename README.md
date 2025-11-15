@@ -2,6 +2,8 @@
 
 -Project: Garbage Classifier AI
 
+-Team members: Daulet Sabdenov, Karim Kalidolla, Assylkhan Mendigali, Maxim Stefan-Theodor
+
 -Repository:https://github.com/KarimSmash-Charka/AmazonCamp-Garbage-classifier-AI- 
 
 -Author(s):[Daulet,Karim,Asylkhan,Stefan]
